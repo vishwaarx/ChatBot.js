@@ -1,88 +1,118 @@
-# RAG-based HR/IT FAQ Chatbot
+# RAG Chatbot with PDF Support
 
-This project implements a RAG (Retrieval-Augmented Generation) based chatbot that can answer HR and IT-related questions by retrieving relevant information from uploaded documents.
+A powerful chatbot application that uses Retrieval-Augmented Generation (RAG) to answer questions based on uploaded PDF documents. Built with FastAPI, Next.js, and Ollama.
 
 ## Features
 
-- Document upload and processing
-- RAG-based question answering
-- Modern web interface
-- Local deployment with Ollama-Mistral
-- Vector storage with ChromaDB
+- PDF document upload and processing
+- Intelligent question answering using RAG
+- Modern, responsive UI with TailwindCSS
+- Real-time chat interface
+- Document context-aware responses
+- Powered by Mistral model through Ollama
 
 ## Prerequisites
 
 - Python 3.8+
 - Node.js 16+
-- Ollama installed locally with Mistral model
-- npm or yarn
+- Ollama installed and running
+- Mistral model pulled in Ollama
 
-## Setup
+## Installation
 
-1. Install Ollama and pull the Mistral model:
+### 1. Clone the repository
+
 ```bash
-# Install Ollama (if not already installed)
-curl https://ollama.ai/install.sh | sh
-
-# Pull the Mistral model
-ollama pull mistral
+git clone https://github.com/vishwaarx/ChatBot.js.git
+cd ChatBot.js
 ```
 
-2. Set up the backend:
+### 2. Backend Setup
+
 ```bash
-# Create a virtual environment
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+# Create and activate virtual environment
+python -m venv .venv
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 
 # Install dependencies
 pip install -r requirements.txt
 
-# Start the backend server
+# Pull Mistral model for Ollama
+ollama pull mistral
+```
+
+### 3. Frontend Setup
+
+```bash
+cd frontend
+npm install
+```
+
+## Running the Application
+
+### 1. Start the Backend Server
+
+```bash
+# From the root directory
 cd backend
 uvicorn main:app --reload
 ```
 
-3. Set up the frontend:
-```bash
-# Install dependencies
-cd frontend
-npm install
+The backend server will start on `http://localhost:8000`
 
-# Start the development server
+### 2. Start the Frontend Development Server
+
+```bash
+# In a new terminal, from the frontend directory
+cd frontend
 npm run dev
 ```
+
+The frontend application will be available at `http://localhost:3000`
 
 ## Usage
 
 1. Open your browser and navigate to `http://localhost:3000`
-2. Upload HR/IT-related documents using the file upload section
-3. Ask questions in the chat interface
-4. The system will retrieve relevant information and generate answers using the RAG pipeline
-
-## Architecture
-
-- Backend: FastAPI with ChromaDB for vector storage
-- Frontend: Next.js with TailwindCSS
-- LLM: Ollama-Mistral running locally
-- Embeddings: Sentence Transformers (all-MiniLM-L6-v2)
+2. Upload a PDF document using the file upload interface
+3. Wait for the document to be processed
+4. Start asking questions about the content of your document
+5. The chatbot will provide answers based on the document's content
 
 ## Project Structure
 
 ```
 .
 ├── backend/
-│   └── main.py
+│   ├── main.py           # FastAPI application
+│   └── chroma_db/        # Vector database storage
 ├── frontend/
-│   ├── app/
-│   │   └── page.tsx
-│   └── package.json
-├── requirements.txt
-└── README.md
+│   ├── app/              # Next.js application
+│   ├── public/           # Static assets
+│   └── package.json      # Frontend dependencies
+└── requirements.txt      # Python dependencies
 ```
 
-## Notes
+## Technologies Used
 
-- The system uses local storage for the vector database
-- All processing is done locally for privacy and security
-- The RAG pipeline uses a chunk size of 1000 characters with 200 character overlap
-- The system retrieves the top 3 most relevant chunks for each question 
+### Backend
+- FastAPI
+- LangChain
+- ChromaDB
+- Ollama
+- PyPDF2
+- Sentence Transformers
+
+### Frontend
+- Next.js
+- React
+- TailwindCSS
+- Axios
+- TypeScript
+
+## Contributing
+
+Feel free to submit issues and enhancement requests!
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details. 
