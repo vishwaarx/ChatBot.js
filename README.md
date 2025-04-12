@@ -1,82 +1,60 @@
-# RAG Chatbot with PDF Support
+# HR/IT FAQ Chatbot
 
-A powerful chatbot application that uses Retrieval-Augmented Generation (RAG) to answer questions based on uploaded PDF documents. Built with FastAPI, Next.js, and Ollama.
+A chatbot application that can answer HR and IT related questions using RAG (Retrieval Augmented Generation).
 
-## Features
+## Setup Instructions
 
-- PDF document upload and processing
-- Intelligent question answering using RAG
-- Modern, responsive UI with TailwindCSS
-- Real-time chat interface
-- Document context-aware responses
-- Powered by Mistral model through Ollama
+### Backend Setup
 
-## Prerequisites
-
-- Python 3.8+
-- Node.js 16+
-- Ollama installed and running
-- Mistral model pulled in Ollama
-
-## Installation
-
-### 1. Clone the repository
-
+1. Create a virtual environment:
 ```bash
-git clone https://github.com/vishwaarx/ChatBot.js.git
-cd ChatBot.js
-```
-
-### 2. Backend Setup
-
-```bash
-# Create and activate virtual environment
 python -m venv .venv
-source .venv/bin/activate  # On Windows: .venv\Scripts\activate
-
-# Install dependencies
-pip install -r requirements.txt
-
-# Pull Mistral model for Ollama
-ollama pull mistral
+source .venv/bin/activate  # On Windows use: .venv\Scripts\activate
 ```
 
-### 3. Frontend Setup
+2. Install dependencies:
+```bash
+cd backend
+pip install -r requirements.txt
+```
 
+3. Start the backend server:
+```bash
+python -m uvicorn main:app --reload
+```
+
+The backend will run on http://localhost:8000
+
+### Frontend Setup
+
+1. Install Node.js dependencies:
 ```bash
 cd frontend
 npm install
 ```
 
-## Running the Application
-
-### 1. Start the Backend Server
-
+2. Start the frontend development server:
 ```bash
-# From the root directory
-cd backend
-uvicorn main:app --reload
-```
-
-The backend server will start on `http://localhost:8000`
-
-### 2. Start the Frontend Development Server
-
-```bash
-# In a new terminal, from the frontend directory
-cd frontend
 npm run dev
 ```
 
-The frontend application will be available at `http://localhost:3000`
+The frontend will run on http://localhost:3000
 
-## Usage
+## Features
 
-1. Open your browser and navigate to `http://localhost:3000`
-2. Upload a PDF document using the file upload interface
-3. Wait for the document to be processed
-4. Start asking questions about the content of your document
-5. The chatbot will provide answers based on the document's content
+- Upload PDF documents for context
+- Ask questions about HR and IT topics
+- Real-time responses using RAG
+- Modern UI with Tailwind CSS
+- File upload support
+- Responsive design
+
+## Requirements
+
+- Python 3.9+
+- Node.js 18+
+- Ollama (for local LLM support)
+- ChromeDB (for vector storage)
 
 ## Project Structure
 

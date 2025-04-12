@@ -29,7 +29,7 @@ app = FastAPI()
 # Configure CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origins=["*"],  # Allow all origins during development
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -80,7 +80,10 @@ except Exception as e:
 
 # Initialize Ollama
 try:
-    llm = Ollama(model="mistral")
+    llm = Ollama(
+        model="mistral",
+        temperature=0.1  # Lower temperature for more focused responses
+    )
     logger.info("Ollama Mistral model initialized successfully")
 except Exception as e:
     logger.error(f"Error initializing Ollama: {str(e)}")
@@ -195,26 +198,58 @@ def load_training_data():
         # Create or get collection for training data
         collection_name = "training_data"
         try:
-            collection = chroma_client.get_collection(collection_name)
-            logger.info("Retrieved existing training collection")
-        except:
-            collection = chroma_client.create_collection(collection_name)
-            logger.info("Created new training collection")
+            # Check if collection exists
+            collections = chroma_client.list_collections()
+            collection_exists = any(col.name == collection_name for col in collections)
             
-        # Add Q&A pairs to collection
-        for i, qa in enumerate(qa_pairs):
-            # Combine question and answer for better context
-            combined_text = f"Question: {qa['question']}\nAnswer: {qa['answer']}"
-            collection.add(
-                documents=[combined_text],
-                ids=[f"training_{i}"]
-            )
+            if collection_exists:
+                # Collection exists, get existing IDs to avoid duplicates
+                collection = chroma_client.get_collection(collection_name)
+                logger.info("Retrieved existing training collection")
+                
+                # Don't re-add training data if it already exists
+                if collection.count() > 0:
+                    logger.info(f"Training data already loaded ({collection.count()} items). Skipping.")
+                    return True
+            else:
+                # Create new collection
+                collection = chroma_client.create_collection(collection_name)
+                logger.info("Created new training collection")
+                
+            # Add Q&A pairs to collection
+            batch_size = 10
+            for i in range(0, len(qa_pairs), batch_size):
+                batch = qa_pairs[i:i+batch_size]
+                documents = []
+                ids = []
+                
+                for j, qa in enumerate(batch):
+                    # Combine question and answer for better context
+                    combined_text = f"Question: {qa['question']}\nAnswer: {qa['answer']}"
+                    documents.append(combined_text)
+                    ids.append(f"training_{i+j}")
+                
+                collection.add(
+                    documents=documents,
+                    ids=ids
+                )
+                logger.info(f"Added batch of {len(batch)} training Q&A pairs to collection")
             
-        logger.info(f"Added {len(qa_pairs)} training Q&A pairs to collection")
-        return True
+            logger.info(f"Added {len(qa_pairs)} total training Q&A pairs to collection")
+            return True
+        except Exception as e:
+            logger.error(f"Error during collection management: {str(e)}")
+            logger.exception("Detailed stack trace:")
+            return False
     except Exception as e:
         logger.error(f"Error loading training data: {str(e)}")
+        logger.exception("Detailed stack trace:")
         return False
+
+# Add a health check endpoint
+@app.get("/")
+async def health_check():
+    return {"status": "ok"}
 
 # Load training data on startup
 load_training_data()
@@ -231,6 +266,14 @@ async def ask_question(question: Question):
         
         # Get training data context with improved retrieval
         try:
+            collections = chroma_client.list_collections()
+            if not any(col.name == "training_data" for col in collections):
+                logger.error("Training data collection not found")
+                raise HTTPException(
+                    status_code=500, 
+                    detail="Training data not initialized properly. Please restart the server."
+                )
+                
             training_collection = chroma_client.get_collection("training_data")
             training_vectorstore = Chroma(
                 client=chroma_client,
@@ -251,7 +294,8 @@ async def ask_question(question: Question):
             retriever = training_retriever
         except Exception as e:
             logger.error(f"Error accessing training data: {str(e)}")
-            raise HTTPException(status_code=500, detail="Error accessing training data")
+            logger.exception("Detailed stack trace for training data error:")
+            raise HTTPException(status_code=500, detail=f"Error accessing training data: {str(e)}")
         
         # Get uploaded documents context with improved retrieval
         try:
@@ -276,9 +320,14 @@ async def ask_question(question: Question):
                 logger.info("No uploaded documents collection found")
         except Exception as e:
             logger.error(f"Error accessing uploaded documents: {str(e)}")
+            logger.exception("Detailed stack trace for documents error:")
+            # Don't raise exception here, just log and continue
         
         # Combine contexts
         combined_context = f"{training_context}\n\n{docs_context}".strip()
+        if not combined_context:
+            logger.warning("No context retrieved for question")
+            combined_context = "No specific information available for this question."
         
         # Create a more focused prompt template
         prompt_template = """Use the following context to answer the question. If you cannot find the answer in the context, say "I cannot find a specific answer to this question in the provided context."
@@ -290,26 +339,39 @@ Question: {question}
 Answer: Let me help you with that."""
 
         # Initialize QA chain with optimized settings
-        qa_chain = RetrievalQA.from_chain_type(
-            llm=llm,
-            chain_type="stuff",
-            retriever=retriever,
-            return_source_documents=True,
-            chain_type_kwargs={
-                "prompt": PromptTemplate(
-                    template=prompt_template,
-                    input_variables=["context", "question"]
-                )
-            }
-        )
+        try:
+            qa_chain = RetrievalQA.from_chain_type(
+                llm=llm,
+                chain_type="stuff",
+                retriever=retriever,
+                return_source_documents=True,
+                chain_type_kwargs={
+                    "prompt": PromptTemplate(
+                        template=prompt_template,
+                        input_variables=["context", "question"]
+                    )
+                }
+            )
+        except Exception as e:
+            logger.error(f"Error initializing QA chain: {str(e)}")
+            logger.exception("Detailed stack trace for QA chain initialization error:")
+            raise HTTPException(status_code=500, detail=f"Error initializing QA chain: {str(e)}")
         
         # Get response with timeout
         try:
             response = await asyncio.wait_for(
                 asyncio.to_thread(qa_chain.invoke, {"query": question.text}),
-                timeout=30.0  # 30 second timeout
+                timeout=45.0  # Increased timeout to 45 seconds
             )
             
+            # Ensure response has the expected structure
+            if not response or "result" not in response:
+                logger.error(f"Invalid response structure: {response}")
+                raise HTTPException(
+                    status_code=500, 
+                    detail="Invalid response from language model"
+                )
+                
             return JSONResponse(content={
                 "answer": response["result"],
                 "sources": [doc.page_content[:200] + "..." for doc in response.get("source_documents", [])]
@@ -317,10 +379,18 @@ Answer: Let me help you with that."""
         except asyncio.TimeoutError:
             logger.error("Response generation timed out")
             raise HTTPException(status_code=504, detail="Response generation timed out")
+        except Exception as e:
+            logger.error(f"Error generating response: {str(e)}")
+            logger.exception("Detailed stack trace for response generation error:")
+            raise HTTPException(status_code=500, detail=f"Error generating response: {str(e)}")
             
+    except HTTPException:
+        # Re-raise HTTP exceptions without modification
+        raise
     except Exception as e:
         logger.error(f"Error processing question: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.exception("Detailed stack trace for question processing error:")
+        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
 
 if __name__ == "__main__":
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True) 

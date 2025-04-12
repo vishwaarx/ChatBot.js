@@ -8,6 +8,8 @@ interface Message {
   content: string;
 }
 
+const API_URL = 'http://localhost:8000';
+
 export default function Home() {
   const [question, setQuestion] = useState('');
   const [messages, setMessages] = useState<Message[]>([]);
@@ -16,7 +18,31 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null);
   const [hasAskedFirstQuestion, setHasAskedFirstQuestion] = useState(false);
   const [isFileUploaded, setIsFileUploaded] = useState(false);
+  const [serverStatus, setServerStatus] = useState<'connecting' | 'connected' | 'disconnected'>('connecting');
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Check server status on component mount
+  useEffect(() => {
+    const checkServerStatus = async () => {
+      try {
+        setServerStatus('connecting');
+        // Make a simple request to the server to check health
+        // The FastAPI server doesn't have a /docs endpoint accessible by default
+        // So instead we use another endpoint or just base URL
+        await axios.get(`${API_URL}/`);
+        setServerStatus('connected');
+      } catch (error) {
+        console.error("Server connection error:", error);
+        setServerStatus('disconnected');
+      }
+    };
+    
+    checkServerStatus();
+    // Set up an interval to check server status periodically
+    const intervalId = setInterval(checkServerStatus, 30000); // every 30 seconds
+    
+    return () => clearInterval(intervalId);
+  }, []);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -41,15 +67,19 @@ export default function Home() {
       try {
         setLoading(true);
         setError(null);
-        const response = await axios.post('http://localhost:8000/upload', formData, {
+        const response = await axios.post(`${API_URL}/upload`, formData, {
           headers: {
             'Content-Type': 'multipart/form-data',
           },
         });
         setIsFileUploaded(true);
+        setServerStatus('connected'); // Update server status on successful upload
       } catch (error: any) {
         setError(error.message || 'Error uploading file');
         alert(`Error uploading file: ${error.message}`);
+        if (error.request && !error.response) {
+          setServerStatus('disconnected');
+        }
       } finally {
         setLoading(false);
       }
@@ -66,7 +96,13 @@ export default function Home() {
   };
 
   const askQuestion = async () => {
-    if (!question.trim()) return;
+    if (!question.trim() || loading) return;  // Prevent submitting if already loading
+    
+    // Prevent asking question if server is disconnected
+    if (serverStatus === 'disconnected') {
+      setError('Server is not connected. Please check the server status and try again.');
+      return;
+    }
 
     try {
       setLoading(true);
@@ -75,17 +111,72 @@ export default function Home() {
       // Add user message
       setMessages(prev => [...prev, { type: 'user', content: question }]);
       
-      const response = await axios.post('http://localhost:8000/ask', {
-        text: question,
+      console.log("Sending request to:", `${API_URL}/ask`);
+      console.log("Request payload:", { text: question });
+      
+      // Store the question to clear the input immediately
+      const currentQuestion = question;
+      setQuestion(''); // Clear input right away to prevent duplicate submissions
+      
+      const response = await axios.post(`${API_URL}/ask`, {
+        text: currentQuestion,  // Use stored question
+      }, {
+        // Add timeout to prevent hanging requests
+        timeout: 60000,
+        // Add additional headers if needed
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        }
       });
+      
+      console.log("Response received:", response.data);
+      setServerStatus('connected'); // Update server status on successful response
       
       // Add bot message
       setMessages(prev => [...prev, { type: 'bot', content: response.data.answer }]);
-      setQuestion(''); // Clear input after sending
       setHasAskedFirstQuestion(true);
     } catch (error: any) {
-      setError(error.message || 'Error getting answer');
-      alert('Error getting answer. Please try again.');
+      console.error("Error details:", error);
+      
+      // More detailed error handling
+      if (error.response) {
+        // The request was made and the server responded with a status code
+        // that falls out of the range of 2xx
+        console.error("Response error data:", error.response.data);
+        console.error("Response error status:", error.response.status);
+        console.error("Response error headers:", error.response.headers);
+        
+        const errorMessage = error.response.data.detail || JSON.stringify(error.response.data);
+        setError(`Server error (${error.response.status}): ${errorMessage}`);
+        
+        // Add error message to chat
+        setMessages(prev => [...prev, { 
+          type: 'bot', 
+          content: `Sorry, I encountered an error: ${errorMessage}. Please try again.` 
+        }]);
+      } else if (error.request) {
+        // The request was made but no response was received
+        console.error("No response received:", error.request);
+        setError("No response received from server. Please check if the server is running.");
+        setServerStatus('disconnected'); // Update server status if no response
+        
+        // Add error message to chat
+        setMessages(prev => [...prev, { 
+          type: 'bot', 
+          content: "Sorry, I didn't receive a response from the server. Please check if the server is running and try again."
+        }]);
+      } else {
+        // Something happened in setting up the request that triggered an Error
+        console.error("Request setup error:", error.message);
+        setError(`Error: ${error.message}`);
+        
+        // Add error message to chat
+        setMessages(prev => [...prev, { 
+          type: 'bot', 
+          content: `Sorry, an error occurred: ${error.message}. Please try again.` 
+        }]);
+      }
     } finally {
       setLoading(false);
     }
@@ -94,9 +185,44 @@ export default function Home() {
   return (
     <main className="min-h-screen p-8 bg-gradient-to-b from-gray-900 to-gray-800">
       <div className="max-w-4xl mx-auto">
-        <h1 className="text-4xl font-bold mb-8 text-center bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">
-          HR/IT FAQ Chatbot
-        </h1>
+        <div className="flex items-center justify-between mb-2">
+          <h1 className="text-4xl font-bold mb-2 bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">
+            HR/IT FAQ Chatbot
+          </h1>
+          
+          {/* Server Status Indicator */}
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-gray-300">Server:</span>
+            <div className="flex items-center gap-1.5">
+              <div 
+                className={`w-2.5 h-2.5 rounded-full ${
+                  serverStatus === 'connected' 
+                    ? 'bg-green-500' 
+                    : serverStatus === 'connecting' 
+                    ? 'bg-yellow-500' 
+                    : 'bg-red-500'
+                }`}
+              />
+              <span className="text-sm text-gray-300">
+                {serverStatus === 'connected' 
+                  ? 'Connected' 
+                  : serverStatus === 'connecting' 
+                  ? 'Connecting...' 
+                  : 'Disconnected'}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Server Status Message */}
+        {serverStatus === 'disconnected' && (
+          <div className="bg-red-900/30 border border-red-700 rounded-lg p-3 mb-4 text-red-200 text-sm">
+            <p>
+              <strong>Server connection error:</strong> The backend server is not responding. 
+              Please make sure the backend server is running before using the chatbot.
+            </p>
+          </div>
+        )}
 
         {!hasAskedFirstQuestion ? (
           // Initial View
