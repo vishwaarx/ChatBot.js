@@ -1,0 +1,72 @@
+# HR FAQs
+Q: How do I request time off?
+A: To request time off, please submit a leave request through our HR portal at least two weeks in advance.
+
+Q: What are the company’s working hours?
+A: Our standard working hours are Monday to Friday, 9 AM to 5 PM.
+
+Q: How do I access my pay stubs?
+A: You can view and download your pay stubs by logging into the employee portal.
+
+Q: What benefits does the company offer?
+A: We offer health insurance, retirement plans, and other benefits. For details, please refer to the employee handbook.
+
+Q: How do I report a workplace incident?
+A: Please report any workplace incidents to your supervisor or HR immediately.
+
+
+# IT FAQs
+Q: How do I reset my network password?
+A: To reset your network password, visit the IT portal and follow the password reset instructions.
+
+Q: My computer is not turning on. What should I do?
+A: Please contact the IT support team for assistance. They will guide you through troubleshooting steps or arrange for a replacement if needed.
+
+Q: How do I request a new laptop or device?
+A: Submit a request through the IT service desk with your manager's approval.
+
+Q: Can I use personal devices for work?
+A: Yes, but you must ensure they meet our security standards and have the necessary software installed.
+
+Q: How do I report a security incident?
+A: Immediately report any security incidents to the IT department via email or phone.
+
+
+# General IT Support
+Q: How do I access company email on my phone?
+A: You can set up your company email on your phone using our email client app. Contact IT for setup instructions.
+
+Q: What software is available for employee use?
+A: A list of approved software is available on the company intranet. If you need additional software, please submit a request to IT.
+
+
+# About the Model
+Q: What is your purpose?
+A: I am an HR/IT FAQ chatbot designed to assist employees with common HR and IT-related questions.
+
+Q: How can you help me?
+A: I can provide information on company policies, IT support, and general HR inquiries. If I'm unsure or don't have the answer, I'll guide you on where to find more information.
+
+Q: Are you available 24/7?
+A: Yes, I am available 24/7 to assist with your queries.
+
+
+# Capabilities and Limitations
+Q: Can you answer technical questions?
+A: Yes, I can answer basic technical questions related to IT support and company systems. For complex issues, I may direct you to contact the IT department.
+
+Q: Can you handle confidential information?
+A: I am designed to handle general inquiries and do not store confidential information. For sensitive matters, please contact the relevant department directly.
+
+Q: Can you provide personalized advice?
+A: I can offer general guidance based on company policies, but for personalized advice, please consult with HR or the relevant department.
+
+
+# Interacting with the Model
+Q: How do I ask questions?
+A: Simply type your question, and I'll do my best to provide a helpful response.
+
+Q: Can I report errors or inaccuracies?
+A: Yes, please let me know if you find any errors or inaccuracies. Your feedback helps improve my responses.
+
+

@@ -17,6 +17,8 @@ import asyncio
 import PyPDF2
 import io
 from langchain.prompts import PromptTemplate
+from functools import lru_cache
+import hashlib
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -35,21 +37,42 @@ app.add_middleware(
 
 # Constants
 MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
-CHUNK_SIZE = 500  # Reduced from 1000 to 500 for faster processing
-CHUNK_OVERLAP = 100  # Reduced from 200 to 100 for faster processing
+CHUNK_SIZE = 1000  # Increased for better context
+CHUNK_OVERLAP = 200  # Increased for better continuity
+CACHE_TTL = 3600  # Cache time-to-live in seconds
 
-# Initialize ChromaDB
+# Cache configuration
+@lru_cache(maxsize=100)
+def get_document_embedding(text: str):
+    return embeddings.embed_query(text)
+
+@lru_cache(maxsize=1000)
+def get_question_embedding(text: str):
+    return embeddings.embed_query(text)
+
+# Initialize ChromaDB with optimized settings
 CHROMA_DB_PATH = "./chroma_db"
 try:
-    chroma_client = chromadb.PersistentClient(path=CHROMA_DB_PATH)
+    chroma_client = chromadb.PersistentClient(
+        path=CHROMA_DB_PATH,
+        settings=Settings(
+            anonymized_telemetry=False,
+            allow_reset=True,
+            is_persistent=True
+        )
+    )
     logger.info("ChromaDB initialized successfully")
 except Exception as e:
     logger.error(f"Error initializing ChromaDB: {str(e)}")
     raise
 
-# Initialize embeddings
+# Initialize embeddings with optimized model
 try:
-    embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
+    embeddings = HuggingFaceEmbeddings(
+        model_name="all-MiniLM-L6-v2",
+        model_kwargs={'device': 'cpu'},
+        encode_kwargs={'normalize_embeddings': True}
+    )
     logger.info("Embeddings model loaded successfully")
 except Exception as e:
     logger.error(f"Error loading embeddings model: {str(e)}")
@@ -141,29 +164,132 @@ async def upload_document(file: UploadFile = File(...)):
         logger.error(f"Error processing file: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
+def load_training_data():
+    """Load and process the training data from training.txt"""
+    try:
+        # Use absolute path to the training.txt file
+        import os
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        training_file_path = os.path.join(os.path.dirname(current_dir), "data", "training.txt")
+        
+        with open(training_file_path, "r") as file:
+            content = file.read()
+            
+        # Split content into Q&A pairs
+        qa_pairs = []
+        current_qa = {"question": "", "answer": ""}
+        
+        for line in content.split("\n"):
+            line = line.strip()
+            if line.startswith("Q:"):
+                if current_qa["question"] and current_qa["answer"]:
+                    qa_pairs.append(current_qa)
+                current_qa = {"question": line[2:].strip(), "answer": ""}
+            elif line.startswith("A:"):
+                current_qa["answer"] = line[2:].strip()
+        
+        # Add the last pair
+        if current_qa["question"] and current_qa["answer"]:
+            qa_pairs.append(current_qa)
+            
+        # Create or get collection for training data
+        collection_name = "training_data"
+        try:
+            collection = chroma_client.get_collection(collection_name)
+            logger.info("Retrieved existing training collection")
+        except:
+            collection = chroma_client.create_collection(collection_name)
+            logger.info("Created new training collection")
+            
+        # Add Q&A pairs to collection
+        for i, qa in enumerate(qa_pairs):
+            # Combine question and answer for better context
+            combined_text = f"Question: {qa['question']}\nAnswer: {qa['answer']}"
+            collection.add(
+                documents=[combined_text],
+                ids=[f"training_{i}"]
+            )
+            
+        logger.info(f"Added {len(qa_pairs)} training Q&A pairs to collection")
+        return True
+    except Exception as e:
+        logger.error(f"Error loading training data: {str(e)}")
+        return False
+
+# Load training data on startup
+load_training_data()
+
 @app.post("/ask")
 async def ask_question(question: Question):
     try:
         logger.info(f"Received question: {question.text}")
         
-        # Get collection
-        collection_name = "hr_it_docs"
-        collection = chroma_client.get_collection(collection_name)
+        # Initialize variables
+        docs_context = ""
+        training_context = ""
+        retriever = None
         
-        # Create vector store
-        vectorstore = Chroma(
-            client=chroma_client,
-            collection_name=collection_name,
-            embedding_function=embeddings
-        )
+        # Get training data context with improved retrieval
+        try:
+            training_collection = chroma_client.get_collection("training_data")
+            training_vectorstore = Chroma(
+                client=chroma_client,
+                collection_name="training_data",
+                embedding_function=embeddings
+            )
+            training_retriever = training_vectorstore.as_retriever(
+                search_type="similarity",
+                search_kwargs={
+                    "k": 4
+                }
+            )
+            training_results = training_retriever.get_relevant_documents(question.text)
+            training_context = "\n\n".join([doc.page_content for doc in training_results])
+            logger.info("Retrieved training data successfully")
+            
+            # Set the default retriever to training data
+            retriever = training_retriever
+        except Exception as e:
+            logger.error(f"Error accessing training data: {str(e)}")
+            raise HTTPException(status_code=500, detail="Error accessing training data")
         
-        # Create retriever with smaller k value for faster processing
-        retriever = vectorstore.as_retriever(
-            search_type="similarity",
-            search_kwargs={"k": 3}  # Reduced from default to 3 most relevant chunks
-        )
+        # Get uploaded documents context with improved retrieval
+        try:
+            collections = chroma_client.list_collections()
+            if any(col.name == "hr_it_docs" for col in collections):
+                docs_collection = chroma_client.get_collection("hr_it_docs")
+                docs_vectorstore = Chroma(
+                    client=chroma_client,
+                    collection_name="hr_it_docs",
+                    embedding_function=embeddings
+                )
+                docs_retriever = docs_vectorstore.as_retriever(
+                    search_type="similarity",
+                    search_kwargs={
+                        "k": 4
+                    }
+                )
+                docs_results = docs_retriever.get_relevant_documents(question.text)
+                docs_context = "\n\n".join([doc.page_content for doc in docs_results])
+                logger.info("Found and used uploaded documents")
+            else:
+                logger.info("No uploaded documents collection found")
+        except Exception as e:
+            logger.error(f"Error accessing uploaded documents: {str(e)}")
         
-        # Create QA chain with optimized parameters
+        # Combine contexts
+        combined_context = f"{training_context}\n\n{docs_context}".strip()
+        
+        # Create a more focused prompt template
+        prompt_template = """Use the following context to answer the question. If you cannot find the answer in the context, say "I cannot find a specific answer to this question in the provided context."
+
+Context: {context}
+
+Question: {question}
+
+Answer: Let me help you with that."""
+
+        # Initialize QA chain with optimized settings
         qa_chain = RetrievalQA.from_chain_type(
             llm=llm,
             chain_type="stuff",
@@ -171,17 +297,27 @@ async def ask_question(question: Question):
             return_source_documents=True,
             chain_type_kwargs={
                 "prompt": PromptTemplate(
-                    template="Answer the question based on the following context. If you cannot find the answer in the context, say 'I cannot find the answer in the provided documents.'\n\nContext: {context}\n\nQuestion: {question}\n\nAnswer:",
+                    template=prompt_template,
                     input_variables=["context", "question"]
                 )
             }
         )
         
-        # Get answer
-        result = qa_chain({"query": question.text})
-        logger.info("Generated answer successfully")
-        
-        return {"answer": result["result"]}
+        # Get response with timeout
+        try:
+            response = await asyncio.wait_for(
+                asyncio.to_thread(qa_chain.invoke, {"query": question.text}),
+                timeout=30.0  # 30 second timeout
+            )
+            
+            return JSONResponse(content={
+                "answer": response["result"],
+                "sources": [doc.page_content[:200] + "..." for doc in response.get("source_documents", [])]
+            })
+        except asyncio.TimeoutError:
+            logger.error("Response generation timed out")
+            raise HTTPException(status_code=504, detail="Response generation timed out")
+            
     except Exception as e:
         logger.error(f"Error processing question: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
