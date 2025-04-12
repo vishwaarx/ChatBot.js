@@ -1,0 +1,9 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply min-h-screen bg-gradient-to-b from-gray-900 to-gray-800 text-gray-100;
+  }
+} 
