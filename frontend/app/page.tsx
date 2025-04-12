@@ -1,15 +1,47 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import axios from 'axios';
+
+interface Message {
+  type: 'user' | 'bot';
+  content: string;
+}
+
+const styles = `
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .animate-fadeIn {
+    animation: fadeIn 0.3s ease-out forwards;
+  }
+`;
 
 export default function Home() {
   const [question, setQuestion] = useState('');
-  const [answer, setAnswer] = useState('');
+  const [messages, setMessages] = useState<Message[]>([]);
   const [file, setFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [hasAskedFirstQuestion, setHasAskedFirstQuestion] = useState(false);
   const [isFileUploaded, setIsFileUploaded] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages, loading]); // Scroll when messages change or loading state changes
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -49,8 +81,9 @@ export default function Home() {
   const startNewChat = () => {
     setFile(null);
     setQuestion('');
-    setAnswer('');
+    setMessages([]);
     setError(null);
+    setHasAskedFirstQuestion(false);
     setIsFileUploaded(false);
   };
 
@@ -60,10 +93,18 @@ export default function Home() {
     try {
       setLoading(true);
       setError(null);
+      
+      // Add user message
+      setMessages(prev => [...prev, { type: 'user', content: question }]);
+      
       const response = await axios.post('http://localhost:8000/ask', {
         text: question,
       });
-      setAnswer(response.data.answer);
+      
+      // Add bot message
+      setMessages(prev => [...prev, { type: 'bot', content: response.data.answer }]);
+      setQuestion(''); // Clear input after sending
+      setHasAskedFirstQuestion(true);
     } catch (error: any) {
       setError(error.message || 'Error getting answer');
       alert('Error getting answer. Please try again.');
@@ -74,98 +115,192 @@ export default function Home() {
 
   return (
     <main className="min-h-screen p-8 bg-gradient-to-b from-gray-900 to-gray-800">
+      <style jsx global>{styles}</style>
       <div className="max-w-4xl mx-auto">
         <h1 className="text-4xl font-bold mb-8 text-center bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">
           HR/IT FAQ Chatbot
         </h1>
-        
-        <div className="bg-gray-800/50 backdrop-blur-sm rounded-xl border border-gray-700 shadow-lg p-6">
-          {/* File Upload Section */}
-          <div className="mb-6 pb-6 border-b border-gray-700">
-            <div className="flex items-center gap-4">
+
+        {!hasAskedFirstQuestion ? (
+          // Initial View
+          <div className="bg-gray-800/50 backdrop-blur-sm rounded-xl border border-gray-700 shadow-lg p-6 transition-all duration-300 ease-in-out transform">
+            {/* File Upload Section */}
+            <div className="flex items-center justify-between mb-6">
               {!isFileUploaded ? (
                 <>
-                  <label className="flex-1">
-                    <div className="flex items-center gap-4">
-                      <button 
-                        className="px-6 py-2 bg-gradient-to-r from-purple-500 to-purple-600 text-white rounded-lg hover:from-purple-600 hover:to-purple-700 transition-all duration-200 font-medium"
-                        onClick={() => document.getElementById('file-upload')?.click()}
-                      >
-                        Choose File
-                      </button>
-                      <span className="text-gray-400">{file ? file.name : 'No file chosen'}</span>
-                    </div>
-                    <input
-                      id="file-upload"
-                      type="file"
-                      onChange={handleFileUpload}
-                      className="hidden"
-                      accept=".txt,.pdf,.doc,.docx"
-                    />
-                  </label>
-                  <button
-                    onClick={uploadFile}
-                    disabled={!file || loading}
-                    className="px-6 py-2 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-lg hover:from-blue-600 hover:to-purple-600 disabled:from-gray-600 disabled:to-gray-600 transition-all duration-200 font-medium"
-                  >
-                    {loading ? 'Uploading...' : 'Upload'}
-                  </button>
+                  <div className="flex items-center gap-4 flex-1">
+                    <button 
+                      className="px-6 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-all duration-200 font-medium"
+                      onClick={() => document.getElementById('file-upload')?.click()}
+                    >
+                      Choose File
+                    </button>
+                    <span className="text-gray-400">{file ? file.name : 'No file chosen'}</span>
+                    <button
+                      onClick={uploadFile}
+                      disabled={!file || loading}
+                      className="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:bg-gray-600 disabled:text-gray-400 transition-all duration-200 font-medium ml-auto"
+                    >
+                      {loading ? (
+                        <div className="flex items-center space-x-2">
+                          <span>Uploading</span>
+                          <div className="flex space-x-1">
+                            <div className="w-1.5 h-1.5 bg-white rounded-full animate-bounce" style={{ animationDelay: '0s' }}></div>
+                            <div className="w-1.5 h-1.5 bg-white rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                            <div className="w-1.5 h-1.5 bg-white rounded-full animate-bounce" style={{ animationDelay: '0.4s' }}></div>
+                          </div>
+                        </div>
+                      ) : (
+                        'Upload'
+                      )}
+                    </button>
+                  </div>
+                  <input
+                    id="file-upload"
+                    type="file"
+                    onChange={handleFileUpload}
+                    className="hidden"
+                    accept=".txt,.pdf,.doc,.docx"
+                  />
                 </>
               ) : (
                 <div className="flex items-center justify-between w-full">
                   <span className="text-gray-300">Current file: {file?.name}</span>
                   <button
                     onClick={startNewChat}
-                    className="px-6 py-2 bg-gradient-to-r from-purple-500 to-purple-600 text-white rounded-lg hover:from-purple-600 hover:to-purple-700 transition-all duration-200 font-medium"
+                    className="px-6 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-all duration-200 font-medium"
                   >
                     New Chat
                   </button>
                 </div>
               )}
             </div>
-            {error && (
-              <div className="mt-2 text-red-400">
-                Error: {error}
-              </div>
-            )}
+
             {!isFileUploaded && (
-              <div className="mt-2 text-sm text-gray-400">
+              <div className="text-sm text-gray-400 mb-8">
                 Supported formats: .txt, .pdf, .doc, .docx (Max size: 10MB)
               </div>
             )}
-          </div>
 
-          {/* Chat Section */}
-          <div>
-            <textarea
-              value={question}
-              onChange={(e) => setQuestion(e.target.value)}
-              placeholder="Ask your question..."
-              className="w-full p-4 bg-gray-700/50 border border-gray-600 rounded-lg text-gray-200 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 h-32 mb-4"
-            />
-            
-            <button
-              onClick={askQuestion}
-              disabled={!question.trim() || loading || !isFileUploaded}
-              className="w-full px-4 py-3 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-lg hover:from-blue-600 hover:to-purple-600 disabled:from-gray-600 disabled:to-gray-600 transition-all duration-200 font-medium"
-            >
-              {loading ? 'Processing...' : 'Ask Question'}
-            </button>
+            {/* Large Question Input - Only show if file is uploaded */}
+            {isFileUploaded && (
+              <>
+                <textarea
+                  value={question}
+                  onChange={(e) => setQuestion(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      askQuestion();
+                    }
+                  }}
+                  placeholder="Ask your question..."
+                  className="w-full p-4 bg-gray-800/50 border-2 border-purple-500 rounded-lg text-gray-200 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 h-40 mb-4 resize-none"
+                />
 
-            {loading && (
-              <div className="mt-4 text-center text-gray-400">
-                <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-gray-400 border-t-purple-500"></div>
-              </div>
+                <button
+                  onClick={askQuestion}
+                  disabled={!question.trim() || loading}
+                  className="w-full max-w-md mx-auto block px-4 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-500 disabled:bg-gray-700 disabled:text-gray-500 transition-all duration-200 font-medium"
+                >
+                  {loading ? (
+                    <div className="flex items-center justify-center space-x-2">
+                      <span>Processing</span>
+                      <div className="flex space-x-1">
+                        <div className="w-1.5 h-1.5 bg-white rounded-full animate-bounce" style={{ animationDelay: '0s' }}></div>
+                        <div className="w-1.5 h-1.5 bg-white rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                        <div className="w-1.5 h-1.5 bg-white rounded-full animate-bounce" style={{ animationDelay: '0.4s' }}></div>
+                      </div>
+                    </div>
+                  ) : (
+                    'Ask Question'
+                  )}
+                </button>
+              </>
             )}
-
-            {answer && (
-              <div className="mt-6 p-6 bg-gray-700/30 rounded-lg border border-gray-600">
-                <h3 className="font-semibold mb-3 text-gray-200">Answer:</h3>
-                <p className="whitespace-pre-wrap text-gray-300">{answer}</p>
-              </div>
-            )}
           </div>
-        </div>
+        ) : (
+          // Chat View
+          <div className="bg-gray-800/50 backdrop-blur-sm rounded-xl border border-gray-700 shadow-lg p-6 transition-all duration-300 ease-in-out transform animate-fadeIn">
+            <div className="flex items-center justify-between mb-6 pb-6 border-b border-gray-700">
+              <span className="text-gray-300">Current file: {file?.name}</span>
+              <button
+                onClick={startNewChat}
+                className="px-6 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-all duration-200 font-medium"
+              >
+                New Chat
+              </button>
+            </div>
+
+            <div className="flex flex-col h-[600px]">
+              {/* Messages Area */}
+              <div className="flex-1 overflow-y-auto mb-4 space-y-4">
+                {messages.map((message, index) => (
+                  <div
+                    key={index}
+                    className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
+                  >
+                    <div
+                      className={`max-w-[80%] p-4 rounded-lg ${
+                        message.type === 'user'
+                          ? 'bg-purple-500 text-white'
+                          : 'bg-gray-700/30 border border-gray-600 text-gray-200'
+                      }`}
+                    >
+                      {message.content}
+                    </div>
+                  </div>
+                ))}
+                {loading && (
+                  <div className="flex justify-start">
+                    <div className="bg-gray-700/30 border border-gray-600 rounded-lg p-4">
+                      <div className="flex items-center space-x-2">
+                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
+                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.4s' }}></div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                <div ref={messagesEndRef} /> {/* Scroll anchor */}
+              </div>
+
+              {/* Input Area */}
+              <div className="flex items-end gap-4">
+                <textarea
+                  value={question}
+                  onChange={(e) => setQuestion(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      askQuestion();
+                    }
+                  }}
+                  placeholder="Ask your question..."
+                  className="flex-1 p-4 bg-gray-700/50 border border-gray-600 rounded-lg text-gray-200 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 h-16 resize-none"
+                />
+                <button
+                  onClick={askQuestion}
+                  disabled={!question.trim() || loading}
+                  className="px-6 py-4 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-lg hover:from-blue-600 hover:to-purple-600 disabled:from-gray-600 disabled:to-gray-600 transition-all duration-200 font-medium h-16"
+                >
+                  {loading ? (
+                    <div className="flex items-center space-x-2">
+                      <span>Processing</span>
+                      <div className="flex space-x-1">
+                        <div className="w-1.5 h-1.5 bg-white rounded-full animate-bounce" style={{ animationDelay: '0s' }}></div>
+                        <div className="w-1.5 h-1.5 bg-white rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                        <div className="w-1.5 h-1.5 bg-white rounded-full animate-bounce" style={{ animationDelay: '0.4s' }}></div>
+                      </div>
+                    </div>
+                  ) : (
+                    'Ask'
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </main>
   );

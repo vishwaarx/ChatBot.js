@@ -1,0 +1,9 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+
+# Your rule content
+
+-When we run the frontend...if the localhost3000 is in use dont try 30001 instead kill 3000 which is in use
