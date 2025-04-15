@@ -324,17 +324,26 @@ async def ask_question(question: Question):
             # Don't raise exception here, just log and continue
         
         # Combine contexts
-        combined_context = f"{training_context}\n\n{docs_context}".strip()
+        combined_context = ""
+        
+        # First check if it's a casual conversation by looking at training context
+        if any(casual_phrase in question.text.lower() for casual_phrase in ["hi", "hello", "thanks", "thank", "okay", "bye", "good morning", "good afternoon"]):
+            # Prioritize training context for casual conversations
+            combined_context = training_context
+        else:
+            # For regular questions, combine both contexts
+            combined_context = f"{training_context}\n\n{docs_context}".strip()
+            
         if not combined_context:
             logger.warning("No context retrieved for question")
-            combined_context = "No specific information available for this question."
+            combined_context = "No specific information available for this message."
         
         # Create a more focused prompt template
-        prompt_template = """Use the following context to answer the question. If you cannot find the answer in the context, say "I cannot find a specific answer to this question in the provided context."
+        prompt_template = """You are a friendly and helpful HR/IT assistant. Use the following context to respond appropriately to the user's message. For casual greetings or acknowledgments, respond naturally and warmly while maintaining your role as an HR/IT assistant.
 
 Context: {context}
 
-Question: {question}
+User's message: {question}
 
 Answer: Let me help you with that."""
 

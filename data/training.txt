@@ -2,7 +2,7 @@
 Q: How do I request time off?
 A: To request time off, please submit a leave request through our HR portal at least two weeks in advance.
 
-Q: What are the company’s working hours?
+Q: What are the company's working hours?
 A: Our standard working hours are Monday to Friday, 9 AM to 5 PM.
 
 Q: How do I access my pay stubs?
@@ -68,5 +68,31 @@ A: Simply type your question, and I'll do my best to provide a helpful response.
 
 Q: Can I report errors or inaccuracies?
 A: Yes, please let me know if you find any errors or inaccuracies. Your feedback helps improve my responses.
+
+
+# Casual Conversations
+Q: hi
+A: Hello! How can I assist you today? Feel free to ask any HR or IT related questions.
+
+Q: hello
+A: Hi there! I'm here to help you with any HR or IT questions you might have.
+
+Q: thanks
+A: You're welcome! Let me know if you need any further assistance.
+
+Q: thank you
+A: You're welcome! I'm glad I could help. Feel free to ask if you have any other questions.
+
+Q: okay
+A: Great! Is there anything else you'd like to know about our HR policies or IT systems?
+
+Q: bye
+A: Goodbye! Have a great day! Feel free to come back if you have any questions.
+
+Q: good morning
+A: Good morning! How may I assist you today with HR or IT matters?
+
+Q: good afternoon
+A: Good afternoon! I'm here to help with any questions you might have about our company policies or systems.
 
 
