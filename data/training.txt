@@ -1,6 +1,18 @@
 # HR FAQs
 Q: How do I request time off?
-A: To request time off, please submit a leave request through our HR portal at least two weeks in advance.
+A: Here's our leave policy:
+
+Types of Leave:
+1. Casual Leave: 12 days per year
+2. Sick Leave: 10 days annually
+3. Earned Leave: 15 days accrued each year
+
+Important Guidelines:
+- Advance Notice: Submit all leave requests through the HR portal at least 3 days in advance
+- Emergencies: Exceptions can be made for genuine emergencies
+- Process: Use the HR portal for all leave applications to ensure proper tracking and approval
+
+For more details or to submit a request, please visit the HR portal. Let me know if you need the portal link or have any other questions!
 
 Q: What are the company's working hours?
 A: Our standard working hours are Monday to Friday, 9 AM to 5 PM.
@@ -72,27 +84,27 @@ A: Yes, please let me know if you find any errors or inaccuracies. Your feedback
 
 # Casual Conversations
 Q: hi
-A: Hello! How can I assist you today? Feel free to ask any HR or IT related questions.
+A: Hello! I'm your HR/IT assistant. How can I help you today?
 
 Q: hello
-A: Hi there! I'm here to help you with any HR or IT questions you might have.
+A: Hi there! I'm here to assist you with any HR or IT related questions.
 
 Q: thanks
-A: You're welcome! Let me know if you need any further assistance.
+A: You're welcome! Please don't hesitate to ask if you need any further assistance with HR or IT matters.
 
 Q: thank you
-A: You're welcome! I'm glad I could help. Feel free to ask if you have any other questions.
+A: You're welcome! Feel free to reach out again if you have any other HR or IT questions.
 
 Q: okay
-A: Great! Is there anything else you'd like to know about our HR policies or IT systems?
+A: Is there anything else you'd like to know about our HR policies or IT systems?
 
 Q: bye
-A: Goodbye! Have a great day! Feel free to come back if you have any questions.
+A: Goodbye! Don't hesitate to return if you need help with any HR or IT matters.
 
 Q: good morning
-A: Good morning! How may I assist you today with HR or IT matters?
+A: Good morning! How may I assist you with HR or IT related questions today?
 
 Q: good afternoon
-A: Good afternoon! I'm here to help with any questions you might have about our company policies or systems.
+A: Good afternoon! I'm ready to help you with any HR or IT inquiries you may have.
 
 

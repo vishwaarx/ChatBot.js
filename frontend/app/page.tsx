@@ -66,8 +66,14 @@ export default function Home() {
         setError('File size must be less than 10MB');
         return;
       }
+      
+      // Set file state immediately to update UI
       setFile(selectedFile);
       setError(null);
+      
+      // Reset input value to ensure onChange triggers correctly on the same file
+      e.target.value = '';
+      
       // Automatically start upload
       const formData = new FormData();
       formData.append('file', selectedFile);
@@ -93,13 +99,28 @@ export default function Home() {
     }
   };
 
-  const startNewChat = () => {
-    setFile(null);
-    setQuestion('');
-    setMessages([]);
-    setError(null);
-    setHasAskedFirstQuestion(false);
-    setIsFileUploaded(false);
+  const startNewChat = async () => {
+    try {
+      // Clear backend collections first
+      await axios.post(`${API_URL}/clear`);
+      
+      // Then clear frontend state
+      setFile(null);
+      setQuestion('');
+      setMessages([]);
+      setError(null);
+      setHasAskedFirstQuestion(false);
+      setIsFileUploaded(false);
+      
+      // Reset file input element
+      const fileInput = document.getElementById('file-upload') as HTMLInputElement;
+      if (fileInput) {
+        fileInput.value = '';
+      }
+    } catch (error: any) {
+      console.error("Error clearing chat:", error);
+      setError("Failed to clear chat state. Please refresh the page.");
+    }
   };
 
   const askQuestion = async () => {
@@ -256,10 +277,7 @@ export default function Home() {
               </div>
             </div>
             <button
-              onClick={() => {
-                setMessages([]);
-                setHasAskedFirstQuestion(false);
-              }}
+              onClick={() => startNewChat().catch(console.error)}
               className="px-4 py-2 bg-gray-700/50 hover:bg-gray-600/50 text-gray-200 rounded-lg transition-all duration-200 flex items-center gap-2 border border-gray-600/50"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -399,6 +417,7 @@ export default function Home() {
                   onChange={handleFileUpload}
                   className="hidden"
                   accept=".txt,.pdf,.doc,.docx"
+                  key={file ? undefined : "empty-input"}
                 />
               </div>
             </div>

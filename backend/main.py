@@ -8,7 +8,7 @@ import os
 from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_community.vectorstores import Chroma
 from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain_community.llms import Ollama
+from langchain_openai import ChatOpenAI
 from langchain.chains import RetrievalQA
 import uvicorn
 import logging
@@ -19,6 +19,10 @@ import io
 from langchain.prompts import PromptTemplate
 from functools import lru_cache
 import hashlib
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -61,7 +65,14 @@ try:
             is_persistent=True
         )
     )
-    logger.info("ChromaDB initialized successfully")
+    
+    # Clear existing collections on startup
+    existing_collections = chroma_client.list_collections()
+    for collection in existing_collections:
+        chroma_client.delete_collection(collection.name)
+        logger.info(f"Deleted existing collection: {collection.name}")
+    
+    logger.info("ChromaDB initialized successfully and collections cleared")
 except Exception as e:
     logger.error(f"Error initializing ChromaDB: {str(e)}")
     raise
@@ -78,15 +89,17 @@ except Exception as e:
     logger.error(f"Error loading embeddings model: {str(e)}")
     raise
 
-# Initialize Ollama
+# Initialize LLM
 try:
-    llm = Ollama(
-        model="mistral",
-        temperature=0.1  # Lower temperature for more focused responses
+    llm = ChatOpenAI(
+        model="gemma3-27b",
+        temperature=0.1,
+        openai_api_key=os.getenv("GOOGLE_API_KEY"),
+        openai_api_base="https://litellm.dev.ai-cloud.me/v1"
     )
-    logger.info("Ollama Mistral model initialized successfully")
+    logger.info("LLM model initialized successfully")
 except Exception as e:
-    logger.error(f"Error initializing Ollama: {str(e)}")
+    logger.error(f"Error initializing LLM: {str(e)}")
     raise
 
 class Question(BaseModel):
@@ -316,6 +329,10 @@ async def ask_question(question: Question):
                 docs_results = docs_retriever.get_relevant_documents(question.text)
                 docs_context = "\n\n".join([doc.page_content for doc in docs_results])
                 logger.info("Found and used uploaded documents")
+                # Update the retriever to use uploaded documents for non-casual questions
+                if not any(casual_phrase in question.text.lower() for casual_phrase in ["hi", "hello", "thanks", "thank", "okay", "bye", "good morning", "good afternoon"]):
+                    retriever = docs_retriever
+                    logger.info("Using uploaded documents as primary retriever")
             else:
                 logger.info("No uploaded documents collection found")
         except Exception as e:
@@ -331,21 +348,27 @@ async def ask_question(question: Question):
             # Prioritize training context for casual conversations
             combined_context = training_context
         else:
-            # For regular questions, combine both contexts
-            combined_context = f"{training_context}\n\n{docs_context}".strip()
+            # For regular questions, prioritize uploaded documents context
+            combined_context = f"{docs_context}\n\n{training_context}".strip() if docs_context else training_context
             
         if not combined_context:
             logger.warning("No context retrieved for question")
             combined_context = "No specific information available for this message."
         
         # Create a more focused prompt template
-        prompt_template = """You are a friendly and helpful HR/IT assistant. Use the following context to respond appropriately to the user's message. For casual greetings or acknowledgments, respond naturally and warmly while maintaining your role as an HR/IT assistant.
+        prompt_template = """You are a friendly and helpful HR/IT assistant. Use the following context to answer the user's question professionally and warmly. Keep responses clear and relevant to HR/IT topics.
+
+Important guidelines:
+1. Use clear, plain text formatting without markdown or special characters
+2. Use proper spacing and line breaks for readability
+3. For lists or structured information, use simple numbers or bullet points with dashes (-)
+4. Avoid using asterisks or other special characters for emphasis
 
 Context: {context}
 
-User's message: {question}
+Question: {question}
 
-Answer: Let me help you with that."""
+Answer: """
 
         # Initialize QA chain with optimized settings
         try:
@@ -400,6 +423,21 @@ Answer: Let me help you with that."""
         logger.error(f"Error processing question: {str(e)}")
         logger.exception("Detailed stack trace for question processing error:")
         raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+
+@app.post("/clear")
+async def clear_collections():
+    """Clear the uploaded documents collection"""
+    try:
+        collections = chroma_client.list_collections()
+        if any(col.name == "hr_it_docs" for col in collections):
+            chroma_client.delete_collection("hr_it_docs")
+            logger.info("Cleared hr_it_docs collection")
+        
+        # Ensure we return a successful response
+        return {"message": "Collections cleared successfully"}
+    except Exception as e:
+        logger.error(f"Error clearing collections: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 if __name__ == "__main__":
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True) 
