@@ -211,19 +211,19 @@ export default function Home() {
   };
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
-      <div className="max-w-5xl mx-auto p-4 sm:p-6 lg:p-8">
+    <main className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 flex flex-col">
+      <div className="flex-1 max-w-5xl w-full mx-auto p-2 sm:p-4 md:p-6 lg:p-8 flex flex-col h-[100vh]">
         {/* Header */}
-        <div className="flex items-center justify-between mb-6 bg-gray-800/30 p-4 rounded-xl backdrop-blur-sm border border-gray-700/50">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4 bg-gray-800/30 p-3 sm:p-4 rounded-xl backdrop-blur-sm border border-gray-700/50">
           <div>
-            <h1 className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
+            <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
               HR/IT FAQ Chatbot
             </h1>
-            <p className="text-gray-400 mt-1">Your AI assistant for HR and IT inquiries</p>
+            <p className="text-gray-400 mt-1 text-sm sm:text-base">Your AI assistant for HR and IT inquiries</p>
           </div>
           
           {/* Server Status with improved styling */}
-          <div className="flex items-center gap-3 bg-gray-900/50 px-4 py-2 rounded-lg border border-gray-700/50">
+          <div className="flex items-center gap-3 bg-gray-900/50 px-3 sm:px-4 py-2 rounded-lg border border-gray-700/50 w-full sm:w-auto">
             <span className="text-sm text-gray-400">Server:</span>
             <div className="flex items-center gap-2">
               <div 
@@ -248,12 +248,12 @@ export default function Home() {
 
         {/* Server Status Message */}
         {serverStatus === 'disconnected' && (
-          <div className="mb-6 bg-red-900/30 backdrop-blur-sm border border-red-700/50 rounded-xl p-4 text-red-200 text-sm animate-fade-in">
+          <div className="mb-4 bg-red-900/30 backdrop-blur-sm border border-red-700/50 rounded-xl p-3 sm:p-4 text-red-200 text-sm animate-fade-in">
             <div className="flex items-center gap-3">
-              <svg className="w-5 h-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-5 h-5 text-red-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
               </svg>
-              <p>
+              <p className="text-xs sm:text-sm">
                 <strong>Server connection error:</strong> The backend server is not responding. 
                 Please make sure the backend server is running before using the chatbot.
               </p>
@@ -262,23 +262,23 @@ export default function Home() {
         )}
 
         {/* Main Chat Container */}
-        <div className="bg-gray-800/30 backdrop-blur-sm rounded-xl border border-gray-700/50 shadow-xl">
+        <div className="bg-gray-800/30 backdrop-blur-sm rounded-xl border border-gray-700/50 shadow-xl flex-1 flex flex-col min-h-0">
           {/* Chat Header */}
-          <div className="flex items-center justify-between p-4 border-b border-gray-700/50">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-3 sm:p-4 border-b border-gray-700/50">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center">
-                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center">
+                <svg className="w-4 h-4 sm:w-6 sm:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
                 </svg>
               </div>
               <div>
-                <h2 className="text-lg font-semibold text-gray-200">Chat Session</h2>
-                <p className="text-sm text-gray-400">Ask any HR or IT related questions</p>
+                <h2 className="text-base sm:text-lg font-semibold text-gray-200">Chat Session</h2>
+                <p className="text-xs sm:text-sm text-gray-400">Ask any HR or IT related questions</p>
               </div>
             </div>
             <button
               onClick={() => startNewChat().catch(console.error)}
-              className="px-4 py-2 bg-gray-700/50 hover:bg-gray-600/50 text-gray-200 rounded-lg transition-all duration-200 flex items-center gap-2 border border-gray-600/50"
+              className="w-full sm:w-auto px-3 sm:px-4 py-2 bg-gray-700/50 hover:bg-gray-600/50 text-gray-200 rounded-lg transition-all duration-200 flex items-center justify-center gap-2 border border-gray-600/50"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -288,17 +288,17 @@ export default function Home() {
           </div>
 
           {/* Messages Area */}
-          <div className="h-[500px] overflow-y-auto p-4 space-y-4">
+          <div className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-4 min-h-0">
             {messages.length === 0 && !hasAskedFirstQuestion && (
-              <div className="flex flex-col items-center justify-center h-full text-center space-y-4">
-                <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center">
-                  <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="flex flex-col items-center justify-center h-full text-center space-y-4 p-4">
+                <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center">
+                  <svg className="w-6 h-6 sm:w-8 sm:h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                   </svg>
                 </div>
                 <div>
-                  <h3 className="text-xl font-semibold text-gray-200 mb-2">Welcome to HR/IT FAQ Chatbot!</h3>
-                  <p className="text-gray-400 max-w-md">I'm here to help you with any HR or IT related questions. Feel free to ask anything!</p>
+                  <h3 className="text-lg sm:text-xl font-semibold text-gray-200 mb-2">Welcome to HR/IT FAQ Chatbot!</h3>
+                  <p className="text-sm sm:text-base text-gray-400 max-w-md">I'm here to help you with any HR or IT related questions. Feel free to ask anything!</p>
                 </div>
               </div>
             )}
@@ -309,13 +309,13 @@ export default function Home() {
                 className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'} animate-fade-in`}
               >
                 <div
-                  className={`max-w-[80%] p-4 rounded-xl shadow-lg ${
+                  className={`max-w-[85%] sm:max-w-[80%] p-3 sm:p-4 rounded-xl shadow-lg ${
                     message.type === 'user'
                       ? 'bg-gradient-to-br from-purple-500 to-blue-500 text-white'
                       : 'bg-gray-700/50 border border-gray-600/50 text-gray-200'
                   }`}
                 >
-                  {message.content}
+                  <p className="text-sm sm:text-base break-words">{message.content}</p>
                 </div>
               </div>
             ))}
@@ -323,10 +323,10 @@ export default function Home() {
           </div>
 
           {/* Input Area */}
-          <div className="border-t border-gray-700/50 p-4">
-            <div className="flex flex-col gap-4">
-              <div className="flex items-end gap-4">
-                <div className="flex-1 relative">
+          <div className="border-t border-gray-700/50 p-3 sm:p-4">
+            <div className="flex flex-col gap-3 sm:gap-4">
+              <div className="flex flex-col w-full gap-3">
+                <div className="w-full relative">
                   <textarea
                     value={question}
                     onChange={(e) => setQuestion(e.target.value)}
@@ -337,8 +337,8 @@ export default function Home() {
                       }
                     }}
                     placeholder="Ask your question..."
-                    className="w-full px-4 py-2.5 bg-gray-700/30 border border-gray-600/50 rounded-xl text-gray-200 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-transparent transition-all duration-200 resize-none"
-                    style={{ minHeight: '2.5rem', maxHeight: '2.5rem' }}
+                    className="w-full px-4 py-3 bg-gray-800/50 border border-gray-600/50 rounded-xl text-gray-200 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-transparent transition-all duration-200 resize-none text-sm sm:text-base"
+                    style={{ minHeight: '2.75rem', maxHeight: '2.75rem' }}
                   />
                   {loading && (
                     <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
@@ -353,7 +353,7 @@ export default function Home() {
                 <button
                   onClick={askQuestion}
                   disabled={!question.trim() || loading}
-                  className={`px-6 py-3 rounded-xl font-medium transition-all duration-200 flex items-center gap-2
+                  className={`w-full px-4 py-3 rounded-xl font-medium transition-all duration-200 flex items-center justify-center gap-2
                     ${!question.trim() || loading
                       ? 'bg-gray-700/50 text-gray-400 cursor-not-allowed'
                       : 'bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white shadow-lg hover:shadow-purple-500/20'
@@ -362,7 +362,7 @@ export default function Home() {
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 9l3 3m0 0l-3 3m3-3H8m13 0a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
-                  {loading ? 'Processing...' : 'Send'}
+                  <span className="text-sm sm:text-base">{loading ? 'Processing...' : 'Send'}</span>
                 </button>
               </div>
 
@@ -376,15 +376,15 @@ export default function Home() {
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
                   </svg>
-                  <span className="text-sm">Upload File</span>
+                  <span className="text-xs sm:text-sm">Upload File</span>
                 </button>
 
                 {/* File name display */}
                 {file && (
-                  <div className="flex items-center gap-2 bg-gray-700/30 px-3 py-1.5 rounded-lg">
-                    <span className="text-sm text-gray-400 truncate max-w-[200px]">{file.name}</span>
+                  <div className="flex items-center gap-2 bg-gray-700/30 px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg">
+                    <span className="text-xs sm:text-sm text-gray-400 truncate max-w-[150px] sm:max-w-[200px]">{file.name}</span>
                     {isFileUploaded ? (
-                      <svg className="w-4 h-4 text-green-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-3 h-3 sm:w-4 sm:h-4 text-green-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
                       </svg>
                     ) : (
