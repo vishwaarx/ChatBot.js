@@ -1,4 +1,4 @@
-# HR/IT FAQ Chatbot: Intelligent Document Retrieval System
+# HR/IT FAQ Chatbot: Intelligent Document Retrieval System(Python Based)
 
 ## Project Summary
 Our team developed a sophisticated chatbot solution that dynamically addresses HR and IT-related inquiries through intelligent document retrieval. Built on a Retrieval Augmented Generation (RAG) architecture, the system delivers precise, context-aware responses by efficiently indexing organizational documentation and retrieving relevant information on demand.
@@ -148,7 +148,7 @@ npm run build
 
 4. Start the frontend server:
 ```bash
-npm start
+npm run dev
 ```
 
 The frontend will be available at `http://localhost:3000`
